@@ -341,10 +341,6 @@ textarea:focus{border-style:solid}
 
   <!-- ============ TAB 4 ============ -->
   <section id="t4" role="tabpanel" hidden>
-    <div class="panel" style="margin-bottom:16px;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center">
-      <button class="btn warm lg" id="submitBtn" type="button">선생님께 제출하기</button>
-      <span class="small" id="submitMsg" aria-live="polite">다 마쳤으면 제출하세요. 고친 뒤 다시 제출하면 새 내용으로 바뀝니다.</span>
-    </div>
     <div class="copyrow">
       <button class="btn ghost" id="copyBtn" type="button">활동지 내용 복사</button>
       <span class="small muted">입력한 내용은 이 브라우저에 자동 저장됩니다.</span>
@@ -357,9 +353,6 @@ textarea:focus{border-style:solid}
 
 <script>
 {
-// ▼▼ (깃허브 등에 올릴 때만) 구글 Apps Script 웹 앱 주소. Apps Script로 바로 배포하면 비워 둬도 됩니다 ▼▼
-const SCRIPT_URL='';
-// ▲▲
 const $=s=>document.querySelector(s);
 const $$=s=>Array.from(document.querySelectorAll(s));
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -449,7 +442,7 @@ $('#loginForm').addEventListener('submit',e=>{e.preventDefault();const er=$('#le
   try{$('#login').hidden=true;$('#app').hidden=false;start();window.scrollTo(0,0);}
   catch(err){$('#app').hidden=true;$('#login').hidden=false;er.textContent='화면을 여는 중에 문제가 생겼어요: '+(err&&err.message||err);}
 });
-$('#logout').addEventListener('click',()=>{lsSet(KEY,S);S=null;$('#app').hidden=true;$('#login').hidden=false;$('#lsid').value='';$('#lname').value='';$('#submitMsg').textContent='다 마쳤으면 제출하세요. 고친 뒤 다시 제출하면 새 내용으로 바뀝니다.';$('#submitBtn').textContent='선생님께 제출하기';showTab('t1');window.scrollTo(0,0);$('#lsid').focus();});
+$('#logout').addEventListener('click',()=>{lsSet(KEY,S);S=null;$('#app').hidden=true;$('#login').hidden=false;$('#lsid').value='';$('#lname').value='';showTab('t1');window.scrollTo(0,0);$('#lsid').focus();});
 
 /* ================= 탭 ================= */
 function showTab(id){$$('nav.tabs button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===id));$$('[role=tabpanel]').forEach(p=>p.hidden=p.id!==id);
@@ -734,22 +727,6 @@ $('#copyBtn').addEventListener('click',()=>{const txt=sheetText(),done=m=>{$('#c
   const fb=()=>{const ta=$('#copySrc');ta.value=txt;ta.select();try{document.execCommand('copy');done('복사했습니다.');}catch(e){done('복사가 막혀 있어요. 위 활동지를 직접 선택해 복사하세요.');}};
   try{navigator.clipboard.writeText(txt).then(()=>done('복사했습니다.'),fb);}catch(e){fb();}});
 
-/* ================= 제출 ================= */
-const GAS=!!(window.google&&google.script&&google.script.run);
-const ONLINE=GAS||/^https:\/\/script\.google\.com\/.+\/exec$/.test(SCRIPT_URL.trim());
-function payload(){const ex=E();return {sid:S.sid,name:S.name,progress:updateProgress(),stepsDone:STEPS.filter(s=>stepDone(s.n)).length,obs:obsText(),mistakes:ex.mistakes||0,
-  q6p:`[정답 ${score(CMP.map(r=>r.p))}] `+CMP.map(r=>r.k+': '+filled(r.p)).join(' / '),q6n:`[정답 ${score(CMP.map(r=>r.n))}] `+CMP.map(r=>r.k+': '+filled(r.n)).join(' / '),r1a:filled('r1a'),r1b:filled('r1b'),r1score:score(['r1a','r1b']),pp:filled('pp'),pc:filled('pc'),np:filled('np'),nc:filled('nc'),r2score:score(['pp','pc','np','nc'])};}
-function gasSubmit(d){return new Promise((res,rej)=>google.script.run.withSuccessHandler(res).withFailureHandler(rej).submitWork(d));}
-async function postSubmit(d){const r=await fetch(SCRIPT_URL,{method:'POST',body:JSON.stringify(d)});const raw=await r.text();try{return JSON.parse(raw);}catch(e){throw new Error('이상한 응답 (상태 '+r.status+')');}}
-$('#submitBtn').addEventListener('click',async()=>{const m=$('#submitMsg'),b=$('#submitBtn');
-  if(!ONLINE){m.style.color='var(--warn)';m.textContent='이 화면에서는 제출할 수 없어요. 선생님이 준 링크로 열거나, 아래 "활동지 내용 복사"를 이용하세요.';return;}
-  b.disabled=true;b.textContent='제출하는 중…';m.style.color='';m.textContent='잠시만 기다려 주세요.';
-  try{const j=GAS?await gasSubmit(payload()):await postSubmit(payload());
-    if(j&&j.ok){S.submittedAt=new Date().toLocaleString('ko-KR');save();m.style.color='var(--ok)';m.textContent=`제출했어요! (${S.submittedAt}, ${j.count}번째 제출) 고친 뒤 다시 제출하면 새 내용으로 바뀝니다.`;b.disabled=false;b.textContent='다시 제출하기';return;}
-    m.style.color='var(--warn)';m.textContent='제출이 거절되었어요 ('+(j&&j.error||'알 수 없음')+'). 학번과 이름을 확인해 보세요.';}
-  catch(e){m.style.color='var(--warn)';m.textContent='제출하지 못했어요. 잠시 뒤 다시 눌러 주세요. (오류: '+(e&&e.message||e)+')';}
-  b.disabled=false;b.textContent='선생님께 제출하기';});
-
 /* ================= 진행률 ================= */
 function updateProgress(){if(!S)return 0;let tot=0,f=0;
   STEPS.forEach(s=>{tot++;if(stepDone(s.n))f++;});
@@ -760,8 +737,7 @@ function start(){$('#whoTxt').innerHTML=`<b>${esc(S.sid)}</b> ${esc(S.name)}`;
   drop.reag='';drop.n=0;drop.dirty='';drop.over=null;drop.inBottle=-1;
   buildBench();paintDropper();renderStep();zoomIdx=0;renderZoom();
   if(E().colored)paintWells(1);
-  Object.keys(CLOZE).filter(id=>!CMPIDS.includes(id)).forEach(id=>renderCloze(id));renderCmp();updateProgress();
-  if(S.submittedAt){$('#submitMsg').textContent=`마지막 제출: ${S.submittedAt}. 고친 뒤 다시 제출하면 새 내용으로 바뀝니다.`;$('#submitBtn').textContent='다시 제출하기';}else{$('#submitMsg').textContent='다 마쳤으면 제출하세요. 고친 뒤 다시 제출하면 새 내용으로 바뀝니다.';$('#submitBtn').textContent='선생님께 제출하기';}}
+  Object.keys(CLOZE).filter(id=>!CMPIDS.includes(id)).forEach(id=>renderCloze(id));renderCmp();updateProgress();}
 }
 </script>
 </body>
